@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 require_once dirname(__FILE__)."/form_field.class.php";
+require_once dirname(__FILE__)."/functions.php";
 
 
 /**
@@ -32,7 +33,8 @@ require_once dirname(__FILE__)."/form_field.class.php";
  */
 class integer_field extends form_field
 {
-
+	const TYPE_TEXTBOX = 1;
+	
 	/**
 	 * The minimum valid field value
 	 * @var integer
@@ -53,26 +55,14 @@ class integer_field extends form_field
 	 * @param integer $range_max The maximum valid field value
 	 */
 	public function __construct($name, $value="", $display_name="", $required=false, $validation_help="",
-		$range_min="", $range_max="")
+		$type=form_field::TYPE_DEFAULT, $range_min="", $range_max="")
 	{
 		//standard stuff
-		$this->name = $name;
-		$this->value = $value;
-		$this->display_name = $display_name;
-		$this->required = $required;
-		$this->validation_help = $validation_help;
+		parent::__construct($name, $value, $display_name, $required, $validation_help, $type);
 				
 		//validation params
 		$this->range_min = $range_min;
 		$this->range_max = $range_max;
-		
-		//create element
-		/*
-		$this->element = $GLOBALS['output']->get_document()->createElement("integer-form-field");
-		$this->element->setAttribute("value",$this->value);
-		$this->element->setAttribute("range_min",$range_min);
-		$this->element->setAttribute("range_max",$range_max);
-		*/
 	}
 	
 	
@@ -81,25 +71,51 @@ class integer_field extends form_field
 	 * @return boolean Returns true if the field value is valid, false otherwise
 	 */
 	public function is_valid()
-	{
-		
+	{		
 		$field_value = trim($this->value);
 		
-		if($field_value=="")
+		if($field_value==""){
 			return !$this->required;
+		}
 		
-		if(!is_numeric($field_value))
+		if(!is_numeric($field_value)){
 			return false;
+		}
 
-		if(floor($field_value)!=$field_value)
+		if(floor($field_value)!=$field_value){
 			return false;
+		}
 
-		if($field_value < $this->range_min || $field_value > $this->range_max)
+		if(($this->range_min!="" && $field_value < $this->range_min) 
+				|| ($this->range_max!="" && $field_value > $this->range_max)){
 			return false;	
+		}
 		
-		return true;
-		
+		return true;		
 	}	
+	
+	public function get_textbox_attributes()
+	{
+		return "name=\"".attr_filter($this->get_full_name())."\" "
+				."value=\"".attr_filter($this->value)."\" ";
+	}
+	
+	public function print_textbox_attributes()
+	{
+		print $this->get_textbox_attributes();
+	}
+	
+	public function get_field_html()
+	{
+		switch($this->type)
+		{
+			case integer_field::TYPE_TEXTBOX:
+			case integer_field::TYPE_DEFAULT:
+			default:
+				return
+					"<input class=\"integer_textbox\" type=\"text\" ".$this->get_textbox_attributes()."\" />";
+		}
+	}
 
 }
 ?>

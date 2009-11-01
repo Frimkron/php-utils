@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-require_once dirname(__FILE__)."functions.php";
+require_once dirname(__FILE__)."/functions.php";
 require_once dirname(__FILE__)."/form_field.class.php";
 
 /**
@@ -49,6 +49,7 @@ class input_form
 	
 	private $method;
 	private $action;
+	private $submit_label;
 	
 	private $is_valid = true;
 	private $hiddens_valid = true;
@@ -60,11 +61,12 @@ class input_form
 	 * @param string $name The name of the form
 	 * @param class $submit The submit button field object - a form_field object
 	 */
-    public function __construct($name="", $method="", $action="") 
+    public function __construct($name="", $method="", $action="", $submit_label="Submit") 
     {
     	$this->name = $name;
     	$this->method = $method;
     	$this->action = $action;
+    	$this->submit_label = $submit_label;
     }
     
     /**
@@ -75,7 +77,10 @@ class input_form
     {
     	//add to array, allowing lookup by name
     	$this->fields[$form_field->get_name()] = 
-    		array("field"=>$form_field, "hidden"=>$hidden);	
+    		array("field"=>$form_field, "hidden"=>$hidden);
+    			
+    	// set reference to form
+    	$form_field->set_form($this);
     }
     
     /**
@@ -166,11 +171,14 @@ class input_form
     	{
     		if($fieldinfo["hidden"])
     		{
-    			$html .= 
-    				"<input type=\"hidden\" "
-    				."name=\"" . ($this->name!=""?attr_filter($this->name):"") . attr_filter($fieldinfo["field"]->get_name()). "\" "
-    				."value=\"" . attr_filter($fieldinfo["field"]->get_value()) . "\" "
-    				."/>\n";
+    			foreach($fieldinfo["field"]->get_hidden_name_values() as $name => $value)
+    			{
+    				$html .= 
+	    				"<input type=\"hidden\" "
+	    				."name=\"" . attr_filter($name). "\" "
+	    				."value=\"" . attr_filter($value) . "\" "
+	    				."/>\n";
+    			}
     		}
     	}
     	return $html;
@@ -206,20 +214,46 @@ class input_form
     			if($fieldinfo["field"]->has_display_message())
     			{
     				$html .= 
-    					"<span>" . html_filter($fieldinfo["field"]->get_display_message()) . "</span>";
+    					"<span class=\"validation_message\">" . html_filter($fieldinfo["field"]->get_display_message()) . "</span>";
     			}
     			$html .= 
     				"</dd>\n";
     		}
     	}
     	$html .= 
-    		"	</dl>\n"
+    		"		<dt>&nbsp;</dt>\n"
+    		."		<dd>\n"
+    		.$this->get_submit_html()
+    		."		</dd>\n"
+    		."	</dl>\n"
     		."</form>\n";
+    	return $html;
     }
     
     public function print_form_html()
     {
     	print $this->get_form_html();
+    }
+    
+    public function get_name()
+    {
+    	return $this->name;
+    }
+    
+    public function get_full_submit_name()
+    {
+    	return $this->name.":"."submit";
+    }
+    
+    public function get_submit_html()
+    {
+    	return "<input class=\"form_submit\" type=\"submit\" name=\"".attr_filter($this->get_full_submit_name())."\" " 
+    		."value=\"".attr_filter($this->submit_label)."\" />";
+    }
+    
+    public function print_submit_html()
+    {
+    	print $this->get_submit_html();
     }
 }
 ?>

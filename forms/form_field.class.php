@@ -29,6 +29,8 @@ OTHER DEALINGS IN THE SOFTWARE.
  */
 abstract class form_field
 {
+	const TYPE_DEFAULT = 0;
+	
 	//---------------- members ---------------------------------------	
 
 	/**
@@ -64,6 +66,10 @@ abstract class form_field
 	
 	protected $display_message = "";
 	
+	protected $type;
+	
+	protected $form = "";
+	
 	//--------------- methods -----------------------------------------
 	
 	/**
@@ -78,13 +84,15 @@ abstract class form_field
 	 * @param string $validation_help The message to display to the user when they have entered
 	 * 		an invalid value for this field. e.g. "Please enter a valid date"
 	 */
-	public function __construct($name, $value="", $display_name="", $required=false, $validation_help="")
+	public function __construct($name, $value="", $display_name="", $required=false, 
+		$validation_help="", $type=form_field::TYPE_DEFAULT)
 	{
 		$this->name = $name;
 		$this->value = $value;
 		$this->display_name = $display_name;
 		$this->required = $required;
 		$this->validation_help = $validation_help;
+		$this->type = $type;
 	}
 	
 	public function get_name()
@@ -122,9 +130,9 @@ abstract class form_field
 		return $this->display_message != "";
 	}
 	
-	public function populate($form_name="")
+	public function populate()
 	{
-		$this->value = trim($_REQUEST[($form_name!=""?"$form_name:":"").$this->name]);
+		$this->value = trim($_REQUEST[$this->get_full_name()]);
 	}
 	
 	public function get_value()
@@ -145,6 +153,30 @@ abstract class form_field
 		print $this->get_field_html();
 	}
 	
+	public function get_form()
+	{
+		return $this->form;
+	}
+	
+	public function set_form($form)
+	{
+		$this->form = $form;
+	}
+	
+	public function get_type()
+	{
+		return $this->type;
+	}
+	
+	public function get_full_name()
+	{
+		return ($this->form!=""?$this->form->get_name().":":"") . $this->name;
+	}
+	
+	public function get_hidden_name_values()
+	{
+		return array($this->get_full_name() => $this->get_value());
+	}
 }
 
 ?>

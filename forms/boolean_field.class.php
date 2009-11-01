@@ -24,36 +24,31 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
 require_once dirname(__FILE__)."/form_field.class.php";
+require_once dirname(__FILE__)."/functions.php";
 
-/**
- * String field validation class
- */
 class boolean_field extends form_field
 {
 	
 	const ON_VALUE = "on";
+	const OFF_VALUE = "off";
+	
+	const TYPE_CHECKBOX = 1;
+	const TYPE_RADIOS = 2;
+	const TYPE_SELECT = 3;
 	
 	private $enum_array;
-
-	private $type;
 	
 	private $false_label;
 	private $true_label;
 		
 	
 	public function __construct($name, $value="", $display_name="", $required=false, 
-		$validation_help="", $type="", $false_label="", $true_label="")
+		$validation_help="", $type=form_field::TYPE_DEFAULT, $false_label="", $true_label="")
 	{		
 		//standard stuff
-		$this->name = $name;
-		$this->value = $value;
-		$this->display_name = $display_name;
-		$this->required = $required;
-		$this->validation_help = $validation_help;		
+		parent::__construct($name, $value, $display_name, $required, $validation_help, $type);
 		
-		$this->type = $type;
 		$this->false_label = $false_label;
 		$this->true_label = $true_label;
 	}
@@ -86,9 +81,10 @@ class boolean_field extends form_field
 	
 	public function get_checkbox_attributes()
 	{
-		// TODO field name needs form name! Doh!
 		return 
-			"name=\"" . 
+			"name=\"".attr_filter($this->get_full_name())."\" "
+			."value=\"".attr_filter(boolean_field::ON_VALUE)."\" "
+			.(trim($this->value)==boolean_field::ON_VALUE?"checked=\"checked\"":"");
 	}
 	
 	public function print_checkbox_attributes()
@@ -96,10 +92,73 @@ class boolean_field extends form_field
 		print $this->get_checkbox_attributes();
 	}
 	
+	public function get_radio_attributes($truefalse)
+	{
+		return "name=\"".attr_filter($this->get_full_name())."\" "
+				."value=\"".attr_filter($truefalse?boolean_field::ON_VALUE:boolean_field::OFF_VALUE)."\" "
+				.((trim($this->value)==boolean_field::ON_VALUE)==$truefalse?"checked=\"checked\"":"");
+	}
+	
+	public function print_radio_attributes($truefalse)
+	{
+		print $this->get_radio_attributes($truefalse);
+	}
+	
+	private function get_radio_id($truefalse)
+	{
+		return $this->get_full_name().":".($truefalse?boolean_field::ON_VALUE:boolean_field::OFF_VALUE);
+	}
+	
+	public function get_select_attributes()
+	{
+		return "name=\"".attr_filter($this->get_full_name())."\"";
+	}
+	
+	public function print_select_attributes()
+	{
+		print $this->get_select_attributes();
+	}
+	
+	public function get_option_attributes($truefalse)
+	{
+		return "value=\"".attr_filter($truefalse?boolean_field::ON_VALUE:boolean_field::OFF_VALUE)."\" "
+			.((trim($this->value)==boolean_field::ON_VALUE)==$truefalse?"selected=\"selected\"":"");
+	}
+	
+	public function print_option_attributes($truefalse)
+	{
+		print $this->get_option_attributes($truefalse);
+	}
+	
 	public function get_field_html()
 	{
-		//TODO
-		return "";
+		switch($this->type)
+		{
+			case boolean_field::TYPE_RADIOS:
+				return 
+					"<span class=\"boolean_radio_option\">"
+						."<label class=\"boolean_label\" for=\"".attr_filter($this->get_radio_id(true))."\">".html_filter($this->true_label)."</label>"
+						."<input class=\"boolean_radio\" type=\"radio\" id=\"".attr_filter($this->get_radio_id(true))."\"".$this->get_radio_attributes(true)." />"
+					."</span>"
+					."<span class=\"boolean_radio_option\">"
+						."<label class=\"boolean_label\" for=\"".attr_filter($this->get_radio_id(false))."\">".html_filter($this->false_label)."</label>"
+						."<input class=\"boolean_radio\" type=\"radio\" id=\"".attr_filter($this->get_radio_id(false))."\" ".$this->get_radio_attributes(false)." />"
+					."</span>";
+			
+			case boolean_field::TYPE_SELECT:
+				return
+					"<select class=\"boolean_select\" ".$this->get_select_attributes().">"
+						."<option ".$this->get_option_attributes(true).">".html_filter($this->true_label)."</option>"
+						."<option ".$this->get_option_attributes(false).">".html_filter($this->false_label)."</option>"
+					."</select>";
+					
+			case boolean_field::TYPE_CHECKBOX:	
+			case boolean_field::TYPE_DEFAULT:			
+			default:
+				return 
+					"<input class=\"boolean_checkbox\" type=\"checkbox\" " . $this->get_checkbox_attributes() . " />";
+		}
+		
 	}
 
 }

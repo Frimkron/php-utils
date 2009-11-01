@@ -25,13 +25,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 require_once dirname(__FILE__)."/form_field.class.php";
-
+require_once dirname(__FILE__)."/functions.php";
 
 /**
  * Represents a time field
  */
 class time_field extends form_field
 {	
+	const TYPE_SELECTS = 1;
+	const TYPE_TEXTBOXES = 2;
+	
 	/**
 	 * The hour component of the earliset valid time
 	 * @var integer
@@ -73,26 +76,21 @@ class time_field extends form_field
 	 * @param integer $max_time_hour The hour component of the latest valid time
 	 * @param integer $max_time_minute The minute component of the latest valid minute
 	 */
-	public function __construct($name, $value="", $display_name="", $required=false, $validation_help="",
-		$min_time_hour="", $min_time_minute="", $max_time_hour=23, $max_time_minute=59)
+	public function __construct($name, $hour_value="", $minute_value="", $display_name="", $required=false, $validation_help="",
+		$type=form_field::TYPE_DEFAULT, $min_time_hour="", $min_time_minute="", $max_time_hour=23, $max_time_minute=59)
 	{
 		//standard stuff
-		$this->name = $name;
-		$this->value = $value;
-		$this->display_name = $display_name;
-		$this->required = $required;
-		$this->validation_help = $validation_help;
+		parent::__construct($name, "", $display_name, $required, $validation_help, $type);
 				
+		//value
+		$this->hour_value = $hour_value;
+		$this->minute_value = $minute_value;
+		
 		//validation params
 		$this->min_time_hour = $min_time_hour;
 		$this->min_time_minute = $min_time_minute;
 		$this->max_time_hour = $max_time_hour;
 		$this->max_time_minute = $max_time_minute;
-		
-		//value
-		$this->hour_value = $value["hour"];
-		$this->minute_value = $value["minute"];
-		
 	}
 	
     
@@ -101,68 +99,159 @@ class time_field extends form_field
 	 * @param array $time_array The time to be validated as an array containing 'hour' and 'minute' keys with appropriate values
 	 * @return boolean Returns true if the field is valid, false otherwise
 	 */
-	public function validate($time_array)
-	{
-
-		$hour_value = trim($time_array['hour']);
-		$minute_value = trim($time_array['minute']);
-    	
+	public function is_valid()
+	{ 	
 		//check for blank
-		if($hour_value=="" || $minute_value=="")
-		{
-			
-			if($hour_value!="" || $minute_value!="")
+		if($this->hour_value=="" || $this->minute_value=="")
+		{			
+			if($this->hour_value!="" || $this->minute_value!=""){
 				return false;
-			else
+			}else{
 				return !$this->required;
-		
+			}		
 		}
     	
 		//check that values are numeric
-		if(!is_numeric($hour_value) || !is_numeric($minute_value))
+		if(!is_numeric($this->hour_value) || !is_numeric($this->minute_value)){
 			return false;
+		}
     	
 		//check that values are integers
-		if(floor($hour_value)!=$hour_value || floor($minute_value)!=$minute_value)
+		if(floor($this->hour_value)!=$this->hour_value || floor($this->minute_value)!=$this->minute_value){
 			return false;
+		}
     	
 		//check each value's range
-		if($hour_value<0 || $hour_value>23 || $minute_value<0 || $minute_value>59)
+		if($this->hour_value<0 || $this->hour_value>23 || $this->minute_value<0 || $this->minute_value>59){
 			return false;
+		}
 		    	
 		//min time check
-		if($hour_value < $this->min_time_hour)
+		if($this->min_time_hour!="" && $this->hour_value < $this->min_time_hour){
 	    		return false;
-	    	else
-	    	{
-
-	    		if($hour_value == $this->min_time_hour)
-	    			if($minute_value < $this->min_time_minute)
-	    				return false;
-    		
-	    	}
+		}else{
+    		if($this->min_time_hour=="" || $this->hour_value == $this->min_time_hour){
+    			if($this->min_time_minute!="" && $this->minute_value < $this->min_time_minute){
+					return false;
+    			}    		
+    		}
+	    }
     	
 		//max time check
-		if($hour_value > $this->max_time_hour)
-	    		return false;
-	    	else
-	    	{
-	    		
-	    		if($hour_value == $this->max_time_hour)
-				if($minute_value > $this->max_time_minute)
+		if($this->max_time_hour!="" && $this->hour_value > $this->max_time_hour){
+	    	return false;
+		}else{	    	
+	    	if($this->max_time_hour=="" || $this->hour_value == $this->max_time_hour){
+				if($this->max_time_minute!="" && $this->minute_value > $this->max_time_minute){
 					return false;
-	    		
-	    	}
+				}
+	    	}	
+	    }
     	
-	    	return true;
+	    return true;
 	    	
 	}
 
-	public function populate($form_name="")
+	public function populate()
 	{
-		$this->value = $_REQUEST[($form_name!=""?"$form_name:":"").$this->name];
-		$this->hour_value = $this->value["hour"];
-		$this->minute_value = $this->value["minute"];
+		$value = $_REQUEST[$this->get_full_name()];
+		if(is_array($value))
+		{
+			$this->hour_value = $value["hour"];
+			$this->minute_value = $value["minute"];
+		}
+	}
+	
+	private function get_hour_field_name()
+	{
+		return $this->get_full_name()."[hour]";
+	}
+	
+	private function get_minute_field_name()
+	{
+		return $this->get_full_name()."[minute]";
+	}
+	
+	public function get_hour_select_attributes()
+	{
+		return "name=\"".attr_filter($this->get_hour_field_name())."\" ";
+	}
+	
+	public function print_hour_select_attributes()
+	{
+		print $this->get_hour_select_attributes();
+	}
+	
+	public function get_minute_select_attributes()
+	{
+		return "name=\"".attr_filter($this->get_minute_field_name())."\" ";
+	}
+	
+	public function print_minute_select_attributes()
+	{
+		print $this->get_minute_select_attributes();
+	}
+	
+	public function get_hour_option_attributes($num)
+	{
+		return "value=\"".attr_filter($num)."\" "
+			.($num==$this->hour_value?"selected=\"selected\"":"");
+	}
+	
+	public function print_hour_option_attributes($num)
+	{
+		print $this->get_hour_option_attributes($num);
+	}
+	
+	public function get_minute_option_attributes($num)
+	{
+		return "value=\"".attr_filter($num)."\" "
+			.($num==$this->minute_value?"selected=\"selected\"":"");
+	}
+	
+	public function print_minute_option_attributes($num)
+	{
+		print $this->get_minute_option_attributes($num);
+	}
+	
+	public function get_field_html()
+	{
+		switch($this->type)
+		{
+			case time_field::TYPE_TEXTBOXES:
+				return 
+					"<input class=\"time_hour_textbox\" type=\"text\" ".$this->get_hour_textbox_attributes()." />"
+					.":"
+					."<input class=\"time_minute_textbox\" type=\"text\" ".$this->get_minute_textbox_attributes()." />";
+			
+			case time_field::TYPE_SELECTS:
+			case time_field::TYPE_DEFAULT:
+			default:
+				$hour_opts = "";
+				$hour_opts .= "<option ".$this->get_hour_option_attributes("")."></option>";
+				for($i=0;$i<=23;$i++){
+					$label = ($i<10?"0":"").$i;
+					$hour_opts .= "<option ".$this->get_hour_option_attributes($i).">".html_filter($label)."</option>";
+				}
+				$minute_opts = "";
+				$minute_opts .= "<option ".$this->get_minute_option_attributes("")."></option>";
+				for($i=0;$i<=59;$i++){
+					$label = ($i<10?"0":"").$i;
+					$minute_opts .= "<option ".$this->get_minute_option_attributes($i).">".html_filter($label)."</option>";
+				}
+				return 
+					"<select class=\"time_hour_select\" ".$this->get_hour_select_attributes().">".$hour_opts."</select>"
+					.":"
+					."<select class=\"time_minute_select\" ".$this->get_minute_select_attributes().">".$minute_opts."</select>";
+		}
+	}
+	
+	public function get_hidden_name_values()
+	{
+		return array(
+			$this->get_hour_field_name() => $this->hour_value,
+			$this->get_minute_field_name() => $this->minute_value
+		);
 	}
 }
 ?>

@@ -32,6 +32,8 @@ require_once dirname(__FILE__)."/form_field.class.php";
  */
 class string_field extends form_field
 {
+	const TYPE_TEXTBOX = 1;
+	const TYPE_TEXTAREA = 2;
 	
 	/**
 	 * The maximum number of characters the field value can be
@@ -51,8 +53,6 @@ class string_field extends form_field
 	 */
 	private $min_length = 0;
 
-	private $type = "";
-
 
 	/**
 	 * Constructs the field description
@@ -62,21 +62,15 @@ class string_field extends form_field
 	 * @param integer $min_length The minimum number of characters the field value can be
 	 */
 	public function __construct($name, $value="", $display_name="", $required=false, $validation_help="",
-		$max_length="", $regex="", $min_length=0, $type="")
+		$type=form_field::TYPE_DEFAULT, $max_length="", $regex="", $min_length=0)
 	{
 		//standard stuff
-		$this->name = $name;
-		$this->value = $value;
-		$this->display_name = $display_name;
-		$this->required = $required;
-		$this->validation_help = $validation_help;
+		parent::__construct($name, $value, $display_name, $required, $validation_help, $type);
 				
 		//validation params
 		$this->max_length = $max_length;
 		$this->regex = $regex;
-		$this->min_length = $min_length;
-		
-		$this->type = $type;
+		$this->min_length = $min_length;	
 	}
 	
 	
@@ -101,6 +95,43 @@ class string_field extends form_field
 		
 		return true;
 		
+	}
+	
+	public function get_textbox_attributes()
+	{
+		return "name=\"".attr_filter($this->get_full_name())."\" "
+				."value=\"".attr_filter($this->value)."\"";
+	}
+	
+	public function print_textbox_attributes()
+	{
+		print $this->get_textbox_attributes();
+	}
+	
+	public function get_textarea_content()
+	{
+		return html_filter($this->value);
+	}
+	
+	public function print_textarea_content()
+	{
+		print $this->get_textarea_content();
+	}
+	
+	public function get_field_html()
+	{
+		switch($this->type)
+		{
+			case string_field::TYPE_TEXTAREA:
+				return
+					"<textarea ".$this->get_textarea_attributes().">".$this->get_textarea_content()."</textarea>";
+			
+			case string_field::TYPE_TEXTBOX:
+			case string_field::TYPE_DEFAULT:
+			default:
+				return
+					"<input class=\"string_textbox\" type=\"text\" ".$this->get_textbox_attributes()." />";
+		}
 	}
 
 }

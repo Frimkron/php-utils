@@ -25,6 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 require_once dirname(__FILE__)."/string_field.class.php";
+require_once dirname(__FILE__)."/functions.php";
+
 
 /**
  * Represents an email field
@@ -41,11 +43,12 @@ class email_field extends string_field
 	 * @param string $validation_help Message to display to the user when an invalid value is entered
 	 */
 	public function __construct($name, $value="", $display_name="", $required=false, $validation_help="",
-		$max_length="")
+		$type=form_field::TYPE_DEFAULT, $max_length="")
 	{		
-		$email_regex = "/^.+\@(\[?)[a-zA-Z0-9\-\.]+\.([a-zA-Z]{2,4}|[0-9]{1,4})(\]?)$/";
+		// anything @ domainpart [ . domainpart [ . domainpart ] ... ]
+		$email_regex = "/^.+@[a-zA-Z0-9\-]+(\.[a-zA-Z0-9\-]+)*$/";
 		parent::__construct($name, $value, $display_name, $required, $validation_help,
-			$max_length, $email_regex);				
+			$type, $max_length, $email_regex);				
 	}
 	
 }
